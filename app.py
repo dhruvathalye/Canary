@@ -21,6 +21,7 @@ import requests
 from flask import Flask, request, jsonify, redirect, send_from_directory, Response
 
 import db
+import decoy_data
 from config import DISCORD_WEBHOOK_URL
 
 app = Flask(__name__, static_folder="static", static_url_path="")
@@ -45,28 +46,17 @@ def action_plan(token_name, ip, geo):
     )
 
 
-# Believable fake data. NOTHING in here hints that it's a decoy -- the attacker
-# must think they grabbed real, valuable data, so they never know they tripped
-# the alarm. (It's all fabricated; no real people or accounts.)
-DECOY_ROWS = [
-    ["Employee", "Role", "Annual Salary", "Email", "Bank Account"],
-    ["Sarah Chen", "Office Manager", 68000, "s.chen@company.com", "8842019734"],
-    ["Mike Torres", "Lead Dentist", 142000, "m.torres@company.com", "5530984412"],
-    ["Priya Patel", "Hygienist", 61000, "p.patel@company.com", "1029384756"],
-    ["James Okoro", "Receptionist", 44000, "j.okoro@company.com", "7741203398"],
-    ["Linda Vasquez", "Billing Lead", 72000, "l.vasquez@company.com", "3398201147"],
-]
+def make_decoy_file(name, company="", location=""):
+    """Return (bytes, mimetype) for a believable, company-specific decoy.
 
-
-def make_decoy_file(name):
-    """Return (bytes, mimetype) for a believable decoy download.
-
-    The file looks like genuine confidential data so the attacker suspects
-    nothing -- there is NO mention that it's a decoy. (All data is fabricated.)
+    The file looks like genuine confidential data for THAT company in THAT city
+    (local-area-code phone numbers, company-domain emails), so the attacker
+    suspects nothing. All data is fabricated.
 
     - .xlsx -> a REAL Excel file (opens cleanly) if openpyxl is installed
     - everything else (or no openpyxl) -> plain CSV/text that opens cleanly too
     """
+    rows = decoy_data.employee_rows(company, location)
     lower = (name or "").lower()
 
     if lower.endswith(".xlsx"):
@@ -77,7 +67,7 @@ def make_decoy_file(name):
             wb = Workbook()
             ws = wb.active
             ws.title = "Payroll 2025"
-            for row in DECOY_ROWS:
+            for row in rows:
                 ws.append(row)
             buf = io.BytesIO()
             wb.save(buf)
@@ -89,7 +79,7 @@ def make_decoy_file(name):
             pass  # openpyxl missing -> fall through to plain text below
 
     # Plain CSV/text fallback (opens fine in Excel/Notepad as .csv or .txt)
-    lines = [",".join(str(c) for c in row) for row in DECOY_ROWS]
+    lines = [",".join(str(c) for c in row) for row in rows]
     return ("\r\n".join(lines).encode("utf-8"), "text/csv")
 
 
@@ -172,10 +162,19 @@ def api_create_token():
         kind=data.get("kind", "link"),
         created_at=now_iso(),
         note=data.get("note", ""),
+        company=data.get("company", ""),
+        location=data.get("location", ""),
+        email=data.get("email", ""),
     )
     # The bait URL the team plants. Anyone hitting it triggers the alarm.
     trigger_url = request.host_url.rstrip("/") + "/t/" + token_id
     return jsonify({"id": token_id, "trigger_url": trigger_url})
+
+
+@app.get("/api/cities")
+def api_cities():
+    """City list for the location dropdown (drives realistic phone numbers)."""
+    return jsonify(decoy_data.CITY_LIST)
 
 
 @app.get("/api/tokens")
@@ -233,7 +232,9 @@ def trigger(token_id):
     if token["kind"] == "file":
         # Serve a real file download so the attacker actually gets "something".
         filename = token["name"] or "document.txt"
-        data, mimetype = make_decoy_file(filename)
+        data, mimetype = make_decoy_file(
+            filename, token.get("company", ""), token.get("location", "")
+        )
         return Response(
             data,
             mimetype=mimetype,

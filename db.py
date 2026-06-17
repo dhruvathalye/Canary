@@ -28,7 +28,10 @@ def init_db():
             name        TEXT NOT NULL,
             kind        TEXT NOT NULL,      -- 'link' | 'file' | 'login'
             created_at  TEXT NOT NULL,
-            note        TEXT
+            note        TEXT,
+            company     TEXT,
+            location    TEXT,
+            email       TEXT
         );
 
         CREATE TABLE IF NOT EXISTS events (
@@ -42,17 +45,25 @@ def init_db():
         );
         """
     )
+    # Migration: add new columns to databases created before they existed.
+    for col in ("company", "location", "email"):
+        try:
+            conn.execute(f"ALTER TABLE tokens ADD COLUMN {col} TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists -> fine
     conn.commit()
     conn.close()
 
 
 # ----- tokens -----
 
-def create_token(token_id, name, kind, created_at, note=""):
+def create_token(token_id, name, kind, created_at, note="",
+                 company="", location="", email=""):
     conn = get_conn()
     conn.execute(
-        "INSERT INTO tokens (id, name, kind, created_at, note) VALUES (?, ?, ?, ?, ?)",
-        (token_id, name, kind, created_at, note),
+        "INSERT INTO tokens (id, name, kind, created_at, note, company, location, email) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (token_id, name, kind, created_at, note, company, location, email),
     )
     conn.commit()
     conn.close()

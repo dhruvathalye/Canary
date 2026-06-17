@@ -1,0 +1,65 @@
+US Cities to Area Codes Reference Mapping
+===========================================
+
+NORTHEAST
+---------
+New York, NY: 212, 646, 718, 917
+Boston, MA: 617, 857
+Philadelphia, PA: 215, 267
+Washington, DC: 202
+Baltimore, MD: 410, 443
+Providence, RI: 401
+Hartford, CT: 860, 203
+Albany, NY: 518
+Buffalo, NY: 716, 585
+Pittsburgh, PA: 412
+
+SOUTHEAST
+---------
+Miami, FL: 305, 786, 954
+Atlanta, GA: 404, 770, 678
+Charlotte, NC: 704, 980
+Nashville, TN: 615, 931
+New Orleans, LA: 504, 985
+Memphis, TN: 901, 662
+Richmond, VA: 804
+Jacksonville, FL: 904
+Raleigh, NC: 919, 984
+Austin, TX: 512, 737
+
+MIDWEST
+-------
+Chicago, IL: 312, 773, 708, 630
+Detroit, MI: 313, 586
+Minneapolis, MN: 612, 651
+St. Louis, MO: 314, 636
+Cleveland, OH: 216, 330
+Cincinnati, OH: 513, 937
+Kansas City, MO: 816, 913
+Milwaukee, WI: 414, 262
+Indianapolis, IN: 317, 765
+Columbus, OH: 614, 740
+
+SOUTHWEST
+---------
+Dallas, TX: 214, 469, 972
+Houston, TX: 713, 281, 832
+Phoenix, AZ: 602, 480, 623
+Denver, CO: 303, 720, 719
+El Paso, TX: 915
+Albuquerque, NM: 505
+Tucson, AZ: 520
+Las Vegas, NV: 702, 725
+
+WEST
+----
+Los Angeles, CA: 213, 310, 424, 626, 818
+San Francisco, CA: 415, 628
+San Diego, CA: 619, 858
+Seattle, WA: 206, 425
+Portland, OR: 503, 971
+San Jose, CA: 408, 669
+Sacramento, CA: 916
+Las Vegas, NV: 702, 725
+Honolulu, HI: 808
+Anchorage, AK: 907

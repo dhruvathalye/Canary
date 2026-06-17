@@ -3,131 +3,197 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Canary — Breach Detection for Small Business</title>
+<title>CANARY — Deception Network</title>
 <style>
-  :root { --bg:#0d1117; --card:#161b22; --line:#30363d; --txt:#e6edf3;
-          --muted:#8b949e; --green:#2ea043; --red:#f85149; --accent:#58a6ff; }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--txt); }
-  header { padding:20px 28px; border-bottom:1px solid var(--line); }
-  header h1 { margin:0; font-size:20px; }
-  header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+  :root{
+    --bg:#0a0a0b; --panel:#101013; --panel2:#15151a; --line:#26262e;
+    --txt:#f4f4f6; --muted:#8a8a93; --faint:#5a5a63;
+    --accent:#e8e8ea; --red:#ff3b30; --green:#30d158;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:"Helvetica Neue",-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
 
-  /* headline stats bar */
-  .stats { display:flex; gap:16px; padding:16px 28px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
-  .stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 18px; min-width:150px; }
-  .stat .num { font-size:26px; font-weight:700; }
-  .stat .lbl { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
-  .stat.bad .num { color:var(--red); }
-  .stat.good .num { color:var(--green); }
+  /* top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;
+    padding:22px 40px;border-bottom:1px solid var(--line);}
+  .brand{font-size:20px;font-weight:600;letter-spacing:.42em;}
+  .brand span{color:var(--faint);}
+  .tag{font-size:12px;color:var(--muted);letter-spacing:.08em;}
 
-  .wrap { display:grid; grid-template-columns: 360px 1fr; gap:24px; padding:24px 28px; }
-  .panel h2 { font-size:14px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
-  input, select, textarea, button { width:100%; padding:9px 10px; margin-top:6px;
-    background:var(--bg); color:var(--txt); border:1px solid var(--line); border-radius:6px; font-size:14px; }
-  button { background:var(--accent); color:#0d1117; font-weight:600; border:none; cursor:pointer; margin-top:12px; }
-  label { font-size:12px; color:var(--muted); }
-  .token { border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-top:10px; background:var(--card); }
-  .token .url { font-family: monospace; font-size:12px; color:var(--accent); word-break:break-all; }
-  .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:10px; background:#21262d; color:var(--green); }
-  .alert { border:1px solid var(--red); border-left:5px solid var(--red); border-radius:8px;
-    padding:14px 16px; margin-top:12px; background:#2d1416; animation: flash .6s ease 2; }
-  @keyframes flash { 50% { background:#5a1d1f; } }
-  .alert h3 { margin:0 0 6px; color:var(--red); }
-  .alert .meta { font-size:12px; color:var(--muted); margin-bottom:8px; }
-  .alert .dwell { font-size:13px; margin-bottom:8px; }
-  .alert .dwell b { color:var(--green); }
-  .alert .ai { white-space:pre-wrap; font-size:14px; line-height:1.5; background:var(--bg);
-    border:1px solid var(--line); border-radius:6px; padding:10px; }
-  .quiet { color:var(--muted); font-size:13px; margin-top:12px; }
+  /* hero stats */
+  .hero{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--line);border-bottom:1px solid var(--line);}
+  .metric{background:var(--bg);padding:34px 40px;}
+  .metric .n{font-size:48px;font-weight:200;letter-spacing:-.02em;line-height:1;}
+  .metric .n.red{color:var(--red);}
+  .metric .n.green{color:var(--green);}
+  .metric .l{margin-top:12px;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted);}
+
+  /* layout */
+  .grid{display:grid;grid-template-columns:380px 1fr;gap:1px;background:var(--line);}
+  .col{background:var(--bg);padding:34px 40px;min-height:60vh;}
+  .col h2{font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 22px;font-weight:500;}
+
+  /* form */
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--faint);margin-bottom:8px;}
+  input,select{width:100%;padding:13px 14px;background:var(--panel);color:var(--txt);
+    border:1px solid var(--line);border-radius:10px;font-size:14px;outline:none;
+    transition:border-color .15s,background .15s;}
+  input::placeholder{color:var(--faint);}
+  input:focus,select:focus{border-color:#3a3a44;background:var(--panel2);}
+  .btn{width:100%;margin-top:8px;padding:14px;border:none;border-radius:10px;
+    background:var(--accent);color:#0a0a0b;font-size:13px;font-weight:600;
+    letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:opacity .15s;}
+  .btn:hover{opacity:.85;}
+
+  /* planted decoys */
+  .decoy{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:12px;
+    background:var(--panel);}
+  .decoy .row{display:flex;justify-content:space-between;align-items:center;}
+  .decoy .nm{font-size:14px;font-weight:500;}
+  .pill{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--line);border-radius:20px;padding:3px 10px;}
+  .decoy .meta{font-size:12px;color:var(--faint);margin-top:6px;}
+  .decoy .url{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);
+    margin-top:8px;word-break:break-all;}
+
+  /* alerts */
+  .empty{color:var(--faint);font-size:13px;border:1px dashed var(--line);border-radius:12px;
+    padding:30px;text-align:center;}
+  .alert{border:1px solid rgba(255,59,48,.4);border-left:3px solid var(--red);border-radius:12px;
+    padding:18px 20px;margin-bottom:14px;background:linear-gradient(90deg,rgba(255,59,48,.07),transparent);
+    animation:rise .4s ease;}
+  @keyframes rise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  .alert .hd{display:flex;justify-content:space-between;align-items:baseline;}
+  .alert .ttl{font-size:15px;font-weight:600;color:var(--red);letter-spacing:.02em;}
+  .alert .dwell{font-size:12px;color:var(--green);font-weight:500;}
+  .alert .meta{font-size:12px;color:var(--muted);margin:8px 0 12px;letter-spacing:.01em;}
+  .alert .plan{white-space:pre-wrap;font-size:13px;line-height:1.6;color:var(--txt);
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;}
+
+  @media(max-width:860px){.hero{grid-template-columns:repeat(2,1fr);}
+    .grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
-  <header>
-    <h1>🐤 Canary — Deception Network</h1>
-    <p>Small businesses get breached and don't notice for ~200 days. We make it seconds.</p>
-  </header>
-
-  <!-- headline numbers -->
-  <div class="stats">
-    <div class="stat"><div class="num" id="s-decoys">0</div><div class="lbl">Decoys planted</div></div>
-    <div class="stat bad"><div class="num" id="s-breaches">0</div><div class="lbl">Breaches detected</div></div>
-    <div class="stat good"><div class="num" id="s-fastest">—</div><div class="lbl">Fastest detection</div></div>
-    <div class="stat"><div class="num" id="s-avg">204 days</div><div class="lbl">Industry average</div></div>
+  <div class="topbar">
+    <div class="brand">CANARY<span>°</span></div>
+    <div class="tag">DECEPTION NETWORK · BREACH DETECTION FOR SMALL BUSINESS</div>
   </div>
 
-  <div class="wrap">
-    <!-- LEFT: create + list bait -->
-    <div class="panel">
-      <h2>Plant a decoy</h2>
-      <label>Name (looks real to an attacker)</label>
-      <input id="name" placeholder="Q3_payroll.xlsx" />
-      <label>Type</label>
-      <select id="kind">
-        <option value="file">Decoy file</option>
-        <option value="login">Fake admin login</option>
-        <option value="link">Tracking link / pixel</option>
-      </select>
-      <button onclick="createToken()">Create bait</button>
+  <div class="hero">
+    <div class="metric"><div class="n" id="m-decoys">0</div><div class="l">Decoys Deployed</div></div>
+    <div class="metric"><div class="n red" id="m-breaches">0</div><div class="l">Breaches Detected</div></div>
+    <div class="metric"><div class="n green" id="m-fastest">—</div><div class="l">Fastest Detection</div></div>
+    <div class="metric"><div class="n" id="m-avg">204d</div><div class="l">Industry Average</div></div>
+  </div>
 
-      <h2 style="margin-top:28px;">Planted decoys</h2>
-      <div id="tokens"></div>
+  <div class="grid">
+    <!-- DEPLOY -->
+    <div class="col">
+      <h2>Deploy a Decoy</h2>
+      <div class="field">
+        <label>Decoy filename</label>
+        <input id="name" placeholder="Q3_payroll.xlsx" />
+      </div>
+      <div class="field">
+        <label>Decoy type</label>
+        <select id="kind">
+          <option value="file">Decoy file (downloads real data)</option>
+          <option value="login">Fake admin login</option>
+          <option value="link">Tracking link / pixel</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Company name</label>
+        <input id="company" placeholder="Bright Smile Dental" />
+      </div>
+      <div class="field">
+        <label>Location (sets local phone area codes)</label>
+        <select id="location"><option value="">Select a city…</option></select>
+      </div>
+      <div class="field">
+        <label>Owner email (for breach alerts)</label>
+        <input id="email" type="email" placeholder="owner@company.com" />
+      </div>
+      <button class="btn" onclick="createToken()">Deploy Decoy</button>
+
+      <h2 style="margin-top:40px;">Deployed Decoys</h2>
+      <div id="decoys"></div>
     </div>
 
-    <!-- RIGHT: live breach feed -->
-    <div class="panel">
-      <h2>Live breach alerts</h2>
+    <!-- ALERTS -->
+    <div class="col">
+      <h2>Live Breach Alerts</h2>
       <div id="alerts"></div>
     </div>
   </div>
 
 <script>
-async function createToken() {
-  const name = document.getElementById('name').value || 'Untitled decoy';
-  const kind = document.getElementById('kind').value;
-  const res = await fetch('/api/tokens', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({name, kind})
+async function loadCities(){
+  const cities = await fetch('/api/cities').then(r=>r.json());
+  const sel = document.getElementById('location');
+  cities.forEach(c=>{
+    const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);
   });
-  const data = await res.json();
-  document.getElementById('name').value = '';
-  refresh();
-  alert('Decoy planted! Trigger URL (paste in a browser to simulate an attacker):\n\n' + data.trigger_url);
 }
 
-async function refresh() {
-  const [tokens, events, stats] = await Promise.all([
+async function createToken(){
+  const body = {
+    name: document.getElementById('name').value || 'Untitled decoy',
+    kind: document.getElementById('kind').value,
+    company: document.getElementById('company').value,
+    location: document.getElementById('location').value,
+    email: document.getElementById('email').value,
+  };
+  const data = await fetch('/api/tokens',{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+  document.getElementById('name').value='';
+  refresh();
+  prompt('Decoy deployed. Copy this trigger URL and plant it (open it to simulate an attacker):', data.trigger_url);
+}
+
+function fmt(s){return s<60?s+'s':s<3600?Math.round(s/60)+'m':s<86400?Math.round(s/3600)+'h':Math.round(s/86400)+'d';}
+
+async function refresh(){
+  const [tokens,events,stats]=await Promise.all([
     fetch('/api/tokens').then(r=>r.json()),
     fetch('/api/events').then(r=>r.json()),
     fetch('/api/stats').then(r=>r.json()),
   ]);
 
-  // headline numbers
-  document.getElementById('s-decoys').textContent = stats.decoys_planted;
-  document.getElementById('s-breaches').textContent = stats.breaches_detected;
-  document.getElementById('s-avg').textContent = stats.industry_avg_days + ' days';
-  const fastest = events.length ? Math.min(...events.map(e=>e.dwell_seconds)) : null;
-  document.getElementById('s-fastest').textContent =
-    fastest === null ? '—' : (fastest < 60 ? fastest + ' sec' : Math.round(fastest/60) + ' min');
+  m_decoys.textContent=stats.decoys_planted;
+  m_breaches.textContent=stats.breaches_detected;
+  m_avg.textContent=stats.industry_avg_days+'d';
+  const fastest=events.length?Math.min(...events.map(e=>e.dwell_seconds)):null;
+  m_fastest.textContent=fastest===null?'—':fmt(fastest);
 
-  document.getElementById('tokens').innerHTML = tokens.map(t => `
-    <div class="token">
-      <strong>${t.name}</strong> <span class="badge">${t.kind}</span>
+  document.getElementById('decoys').innerHTML = tokens.length ? tokens.map(t=>`
+    <div class="decoy">
+      <div class="row"><span class="nm">${t.name}</span><span class="pill">${t.kind}</span></div>
+      <div class="meta">${[t.company,t.location].filter(Boolean).join(' · ')||'No company set'}</div>
       <div class="url">${location.origin}/t/${t.id}</div>
-    </div>`).join('') || '<div class="quiet">No decoys yet.</div>';
+    </div>`).join('') : '<div class="empty">No decoys deployed yet.</div>';
 
-  document.getElementById('alerts').innerHTML = events.map(e => `
+  document.getElementById('alerts').innerHTML = events.length ? events.map(e=>`
     <div class="alert">
-      <h3>⚠️ BREACH DETECTED — "${e.token_name}"</h3>
-      <div class="meta">${e.triggered_at} · IP ${e.ip} · ${e.geo || 'Unknown'} · ${e.user_agent}</div>
-      <div class="dwell">Detected in <b>${e.dwell_human}</b> — vs. the industry average of <b>204 days</b>.</div>
-      <div class="ai">${e.explanation || ''}</div>
-    </div>`).join('') ||
-    '<div class="quiet">✅ All quiet. No decoys have been touched.</div>';
+      <div class="hd">
+        <span class="ttl">BREACH · ${e.token_name}</span>
+        <span class="dwell">Detected in ${e.dwell_human}</span>
+      </div>
+      <div class="meta">${e.triggered_at} · ${e.ip} · ${e.geo||'Unknown'} · ${e.user_agent}</div>
+      <div class="plan">${e.explanation||''}</div>
+    </div>`).join('') : '<div class="empty">All quiet. No decoys have been touched.</div>';
 }
 
+loadCities();
 refresh();
-setInterval(refresh, 2000);   // poll every 2s -> feels real-time
+setInterval(refresh,2000);
 </script>
 </body>
 </html>
