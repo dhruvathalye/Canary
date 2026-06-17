@@ -45,21 +45,27 @@ def action_plan(token_name, ip, geo):
     )
 
 
+# Believable fake data. NOTHING in here hints that it's a decoy -- the attacker
+# must think they grabbed real, valuable data, so they never know they tripped
+# the alarm. (It's all fabricated; no real people or accounts.)
 DECOY_ROWS = [
-    ["Employee", "Role", "Annual Salary", "Email", "Login"],
-    ["Sarah Chen", "Office Manager", 68000, "s.chen@company.local", "schen"],
-    ["Mike Torres", "Lead Dentist", 142000, "m.torres@company.local", "mtorres"],
-    ["Priya Patel", "Hygienist", 61000, "p.patel@company.local", "ppatel"],
-    ["James Okoro", "Receptionist", 44000, "j.okoro@company.local", "jokoro"],
+    ["Employee", "Role", "Annual Salary", "Email", "Bank Account"],
+    ["Sarah Chen", "Office Manager", 68000, "s.chen@company.com", "8842019734"],
+    ["Mike Torres", "Lead Dentist", 142000, "m.torres@company.com", "5530984412"],
+    ["Priya Patel", "Hygienist", 61000, "p.patel@company.com", "1029384756"],
+    ["James Okoro", "Receptionist", 44000, "j.okoro@company.com", "7741203398"],
+    ["Linda Vasquez", "Billing Lead", 72000, "l.vasquez@company.com", "3398201147"],
 ]
 
 
 def make_decoy_file(name):
     """Return (bytes, mimetype) for a believable decoy download.
 
+    The file looks like genuine confidential data so the attacker suspects
+    nothing -- there is NO mention that it's a decoy. (All data is fabricated.)
+
     - .xlsx -> a REAL Excel file (opens cleanly) if openpyxl is installed
     - everything else (or no openpyxl) -> plain CSV/text that opens cleanly too
-    Either way it's harmless bait -- no real sensitive data.
     """
     lower = (name or "").lower()
 
@@ -70,11 +76,9 @@ def make_decoy_file(name):
 
             wb = Workbook()
             ws = wb.active
-            ws.title = "Payroll"
+            ws.title = "Payroll 2025"
             for row in DECOY_ROWS:
                 ws.append(row)
-            ws.append([])
-            ws.append(["NOTE: security decoy - accessed by an unauthorized party."])
             buf = io.BytesIO()
             wb.save(buf)
             return (
@@ -85,9 +89,7 @@ def make_decoy_file(name):
             pass  # openpyxl missing -> fall through to plain text below
 
     # Plain CSV/text fallback (opens fine in Excel/Notepad as .csv or .txt)
-    lines = ["CONFIDENTIAL - INTERNAL USE ONLY", f"File: {name}", ""]
-    lines += [",".join(str(c) for c in row) for row in DECOY_ROWS]
-    lines += ["", "NOTE: security decoy - accessed by an unauthorized party."]
+    lines = [",".join(str(c) for c in row) for row in DECOY_ROWS]
     return ("\r\n".join(lines).encode("utf-8"), "text/csv")
 
 
