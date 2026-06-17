@@ -45,23 +45,50 @@ def action_plan(token_name, ip, geo):
     )
 
 
+DECOY_ROWS = [
+    ["Employee", "Role", "Annual Salary", "Email", "Login"],
+    ["Sarah Chen", "Office Manager", 68000, "s.chen@company.local", "schen"],
+    ["Mike Torres", "Lead Dentist", 142000, "m.torres@company.local", "mtorres"],
+    ["Priya Patel", "Hygienist", 61000, "p.patel@company.local", "ppatel"],
+    ["James Okoro", "Receptionist", 44000, "j.okoro@company.local", "jokoro"],
+]
+
+
 def make_decoy_file(name):
-    """Build fake-but-believable file contents so an attacker downloads something
-    real-looking. It's harmless bait -- no actual sensitive data."""
-    return (
-        "CONFIDENTIAL - INTERNAL USE ONLY\r\n"
-        f"File: {name}\r\n"
-        "----------------------------------------\r\n"
-        "Employee,Role,Annual Salary,Email,Login\r\n"
-        "Sarah Chen,Office Manager,68000,s.chen@company.local,schen\r\n"
-        "Mike Torres,Lead Dentist,142000,m.torres@company.local,mtorres\r\n"
-        "Priya Patel,Hygienist,61000,p.patel@company.local,ppatel\r\n"
-        "James Okoro,Receptionist,44000,j.okoro@company.local,jokoro\r\n"
-        "----------------------------------------\r\n"
-        "VPN: vpn.company.local   Admin portal: /admin\r\n"
-        "NOTE: This document is a security decoy. If you are reading this in an\r\n"
-        "incident review, the file was accessed by an unauthorized party.\r\n"
-    )
+    """Return (bytes, mimetype) for a believable decoy download.
+
+    - .xlsx -> a REAL Excel file (opens cleanly) if openpyxl is installed
+    - everything else (or no openpyxl) -> plain CSV/text that opens cleanly too
+    Either way it's harmless bait -- no real sensitive data.
+    """
+    lower = (name or "").lower()
+
+    if lower.endswith(".xlsx"):
+        try:
+            import io
+            from openpyxl import Workbook
+
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Payroll"
+            for row in DECOY_ROWS:
+                ws.append(row)
+            ws.append([])
+            ws.append(["NOTE: security decoy - accessed by an unauthorized party."])
+            buf = io.BytesIO()
+            wb.save(buf)
+            return (
+                buf.getvalue(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        except Exception:
+            pass  # openpyxl missing -> fall through to plain text below
+
+    # Plain CSV/text fallback (opens fine in Excel/Notepad as .csv or .txt)
+    lines = ["CONFIDENTIAL - INTERNAL USE ONLY", f"File: {name}", ""]
+    lines += [",".join(str(c) for c in row) for row in DECOY_ROWS]
+    lines += ["", "NOTE: security decoy - accessed by an unauthorized party."]
+    return ("\r\n".join(lines).encode("utf-8"), "text/csv")
 
 
 def lookup_geo(ip):
@@ -204,9 +231,10 @@ def trigger(token_id):
     if token["kind"] == "file":
         # Serve a real file download so the attacker actually gets "something".
         filename = token["name"] or "document.txt"
+        data, mimetype = make_decoy_file(filename)
         return Response(
-            make_decoy_file(filename),
-            mimetype="application/octet-stream",
+            data,
+            mimetype=mimetype,
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     return ("", 200)  # tracking link / pixel: silent
