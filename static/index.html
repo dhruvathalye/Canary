@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deception Network — Breach Detection for Small Business</title>
+<style>
+  :root { --bg:#0d1117; --card:#161b22; --line:#30363d; --txt:#e6edf3;
+          --muted:#8b949e; --green:#2ea043; --red:#f85149; --accent:#58a6ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--txt); }
+  header { padding:20px 28px; border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:20px; }
+  header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+  .wrap { display:grid; grid-template-columns: 360px 1fr; gap:24px; padding:24px 28px; }
+  .panel h2 { font-size:14px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
+  input, select, textarea, button { width:100%; padding:9px 10px; margin-top:6px;
+    background:var(--bg); color:var(--txt); border:1px solid var(--line); border-radius:6px; font-size:14px; }
+  button { background:var(--accent); color:#0d1117; font-weight:600; border:none; cursor:pointer; margin-top:12px; }
+  label { font-size:12px; color:var(--muted); }
+  .token { border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-top:10px; background:var(--card); }
+  .token .url { font-family: monospace; font-size:12px; color:var(--accent); word-break:break-all; }
+  .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:10px; background:#21262d; color:var(--green); }
+  .alert { border:1px solid var(--red); border-left:5px solid var(--red); border-radius:8px;
+    padding:14px 16px; margin-top:12px; background:#2d1416; animation: flash .6s ease 2; }
+  @keyframes flash { 50% { background:#5a1d1f; } }
+  .alert h3 { margin:0 0 6px; color:var(--red); }
+  .alert .meta { font-size:12px; color:var(--muted); margin-bottom:8px; }
+  .alert .ai { white-space:pre-wrap; font-size:14px; line-height:1.5; background:var(--bg);
+    border:1px solid var(--line); border-radius:6px; padding:10px; }
+  .quiet { color:var(--muted); font-size:13px; margin-top:12px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>🛡️ Deception Network</h1>
+    <p>Small businesses get breached and don't notice for ~200 days. We make it seconds.</p>
+  </header>
+
+  <div class="wrap">
+    <!-- LEFT: create + list bait -->
+    <div class="panel">
+      <h2>Plant a decoy</h2>
+      <label>Name (looks real to an attacker)</label>
+      <input id="name" placeholder="Q3_payroll.xlsx" />
+      <label>Type</label>
+      <select id="kind">
+        <option value="file">Decoy file</option>
+        <option value="login">Fake admin login</option>
+        <option value="link">Tracking link / pixel</option>
+      </select>
+      <button onclick="createToken()">Create bait</button>
+
+      <h2 style="margin-top:28px;">Planted decoys</h2>
+      <div id="tokens"></div>
+    </div>
+
+    <!-- RIGHT: live breach feed -->
+    <div class="panel">
+      <h2>Live breach alerts</h2>
+      <div id="alerts"></div>
+    </div>
+  </div>
+
+<script>
+async function createToken() {
+  const name = document.getElementById('name').value || 'Untitled decoy';
+  const kind = document.getElementById('kind').value;
+  const res = await fetch('/api/tokens', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({name, kind})
+  });
+  const data = await res.json();
+  document.getElementById('name').value = '';
+  refresh();
+  // Quick way to test: copy this URL and open it / curl it to "trigger a breach"
+  alert('Decoy planted! Trigger URL (paste in a browser to simulate an attacker):\n\n' + data.trigger_url);
+}
+
+async function refresh() {
+  const [tokens, events] = await Promise.all([
+    fetch('/api/tokens').then(r=>r.json()),
+    fetch('/api/events').then(r=>r.json()),
+  ]);
+
+  document.getElementById('tokens').innerHTML = tokens.map(t => `
+    <div class="token">
+      <strong>${t.name}</strong> <span class="badge">${t.kind}</span>
+      <div class="url">${location.origin}/t/${t.id}</div>
+    </div>`).join('') || '<div class="quiet">No decoys yet.</div>';
+
+  document.getElementById('alerts').innerHTML = events.map(e => `
+    <div class="alert">
+      <h3>⚠️ BREACH DETECTED — "${e.token_name}"</h3>
+      <div class="meta">${e.triggered_at} · IP ${e.ip} · ${e.geo || 'Unknown'} · ${e.user_agent}</div>
+      <div class="ai">${e.explanation || ''}</div>
+    </div>`).join('') ||
+    '<div class="quiet">✅ All quiet. No decoys have been touched.</div>';
+}
+
+refresh();
+setInterval(refresh, 2000);   // poll every 2s -> feels real-time
+</script>
+</body>
+</html>

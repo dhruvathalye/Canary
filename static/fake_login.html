@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Portal — Sign in</title>
+<style>
+  body { font-family: system-ui, sans-serif; background:#f3f4f6; display:flex;
+         align-items:center; justify-content:center; height:100vh; margin:0; }
+  .box { background:#fff; padding:32px; border-radius:10px; width:320px;
+         box-shadow:0 6px 24px rgba(0,0,0,.1); }
+  h2 { margin:0 0 4px; } p { color:#6b7280; font-size:13px; margin:0 0 20px; }
+  input { width:100%; padding:10px; margin:6px 0; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box; }
+  button { width:100%; padding:10px; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h2>Admin Portal</h2>
+    <p>Internal use only. Authorized staff sign in below.</p>
+    <input id="u" placeholder="Username" />
+    <input id="p" type="password" placeholder="Password" />
+    <button onclick="alert('Invalid credentials. Please contact IT.')">Sign in</button>
+  </div>
+  <!--
+    This is a DECOY. There is no real account here. The breach was already
+    logged the instant someone loaded this page (via /t/<token_id>).
+    Anything typed here is fake bait — never store real credentials.
+  -->
+</body>
+</html>
