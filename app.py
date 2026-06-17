@@ -127,12 +127,18 @@ def home():
 
 @app.post("/api/tokens")
 def api_create_token():
-    data = request.get_json(force=True)
+    data = request.get_json(silent=True) or {}
+    allowed_kinds = {"file", "login", "link", "portal"}
     token_id = uuid.uuid4().hex[:12]
+    name=(data.get("name") or "Untitled decoy").strip()
+    kind=(data.get("kind") or "link").strip().lower()
+    if kind not in allowed_kinds:
+            return jsonify({"error": "invalid kind"}), 400
     db.create_token(
         token_id=token_id,
-        name=data.get("name", "Untitled decoy"),
-        kind=data.get("kind", "link"),
+        name=name,
+        kind=kind,
+        
         created_at=now_iso(),
         note=data.get("note", ""),
         company=data.get("company", ""),
