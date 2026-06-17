@@ -78,6 +78,12 @@
 
   @media(max-width:860px){.hero{grid-template-columns:repeat(2,1fr);}
     .grid{grid-template-columns:1fr;}}
+    #thing{
+        color:#ff3b30
+    }
+    #otherThing{
+        color:#30d158
+    }
 </style>
 </head>
 <body>
@@ -88,8 +94,8 @@
 
   <div class="hero">
     <div class="metric"><div class="n" id="m-decoys">0</div><div class="l">Decoys Deployed</div></div>
-    <div class="metric"><div class="n green" id="m-breaches">None</div><div class="l">Breaches Detected</div></div>
-    <div class="metric"><div class="n" id="m-fastest">NA</div><div class="l">Fastest Detection</div></div>
+    <div class="metric"><div class="n" id="m-breaches">None</div><div class="l" id="thing">Breaches Detected</div></div>
+    <div class="metric"><div class="n" id="m-fastest">N/A</div><div class="l" id="otherThing">Fastest Detection</div></div>
     <div class="metric"><div class="n" id="m-avg">204d</div><div class="l">Industry Average</div></div>
   </div>
 
