@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Deception Network — Breach Detection for Small Business</title>
+<title>Canary — Breach Detection for Small Business</title>
 <style>
   :root { --bg:#0d1117; --card:#161b22; --line:#30363d; --txt:#e6edf3;
           --muted:#8b949e; --green:#2ea043; --red:#f85149; --accent:#58a6ff; }
@@ -12,6 +12,15 @@
   header { padding:20px 28px; border-bottom:1px solid var(--line); }
   header h1 { margin:0; font-size:20px; }
   header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+
+  /* headline stats bar */
+  .stats { display:flex; gap:16px; padding:16px 28px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 18px; min-width:150px; }
+  .stat .num { font-size:26px; font-weight:700; }
+  .stat .lbl { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+  .stat.bad .num { color:var(--red); }
+  .stat.good .num { color:var(--green); }
+
   .wrap { display:grid; grid-template-columns: 360px 1fr; gap:24px; padding:24px 28px; }
   .panel h2 { font-size:14px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
   input, select, textarea, button { width:100%; padding:9px 10px; margin-top:6px;
@@ -26,6 +35,8 @@
   @keyframes flash { 50% { background:#5a1d1f; } }
   .alert h3 { margin:0 0 6px; color:var(--red); }
   .alert .meta { font-size:12px; color:var(--muted); margin-bottom:8px; }
+  .alert .dwell { font-size:13px; margin-bottom:8px; }
+  .alert .dwell b { color:var(--green); }
   .alert .ai { white-space:pre-wrap; font-size:14px; line-height:1.5; background:var(--bg);
     border:1px solid var(--line); border-radius:6px; padding:10px; }
   .quiet { color:var(--muted); font-size:13px; margin-top:12px; }
@@ -33,9 +44,17 @@
 </head>
 <body>
   <header>
-    <h1>🛡️ Deception Network</h1>
+    <h1>🐤 Canary — Deception Network</h1>
     <p>Small businesses get breached and don't notice for ~200 days. We make it seconds.</p>
   </header>
+
+  <!-- headline numbers -->
+  <div class="stats">
+    <div class="stat"><div class="num" id="s-decoys">0</div><div class="lbl">Decoys planted</div></div>
+    <div class="stat bad"><div class="num" id="s-breaches">0</div><div class="lbl">Breaches detected</div></div>
+    <div class="stat good"><div class="num" id="s-fastest">—</div><div class="lbl">Fastest detection</div></div>
+    <div class="stat"><div class="num" id="s-avg">204 days</div><div class="lbl">Industry average</div></div>
+  </div>
 
   <div class="wrap">
     <!-- LEFT: create + list bait -->
@@ -73,15 +92,23 @@ async function createToken() {
   const data = await res.json();
   document.getElementById('name').value = '';
   refresh();
-  // Quick way to test: copy this URL and open it / curl it to "trigger a breach"
   alert('Decoy planted! Trigger URL (paste in a browser to simulate an attacker):\n\n' + data.trigger_url);
 }
 
 async function refresh() {
-  const [tokens, events] = await Promise.all([
+  const [tokens, events, stats] = await Promise.all([
     fetch('/api/tokens').then(r=>r.json()),
     fetch('/api/events').then(r=>r.json()),
+    fetch('/api/stats').then(r=>r.json()),
   ]);
+
+  // headline numbers
+  document.getElementById('s-decoys').textContent = stats.decoys_planted;
+  document.getElementById('s-breaches').textContent = stats.breaches_detected;
+  document.getElementById('s-avg').textContent = stats.industry_avg_days + ' days';
+  const fastest = events.length ? Math.min(...events.map(e=>e.dwell_seconds)) : null;
+  document.getElementById('s-fastest').textContent =
+    fastest === null ? '—' : (fastest < 60 ? fastest + ' sec' : Math.round(fastest/60) + ' min');
 
   document.getElementById('tokens').innerHTML = tokens.map(t => `
     <div class="token">
@@ -93,6 +120,7 @@ async function refresh() {
     <div class="alert">
       <h3>⚠️ BREACH DETECTED — "${e.token_name}"</h3>
       <div class="meta">${e.triggered_at} · IP ${e.ip} · ${e.geo || 'Unknown'} · ${e.user_agent}</div>
+      <div class="dwell">Detected in <b>${e.dwell_human}</b> — vs. the industry average of <b>204 days</b>.</div>
       <div class="ai">${e.explanation || ''}</div>
     </div>`).join('') ||
     '<div class="quiet">✅ All quiet. No decoys have been touched.</div>';

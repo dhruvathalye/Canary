@@ -101,7 +101,8 @@ def list_events():
     conn = get_conn()
     rows = conn.execute(
         """
-        SELECT events.*, tokens.name AS token_name, tokens.kind AS token_kind
+        SELECT events.*, tokens.name AS token_name, tokens.kind AS token_kind,
+               tokens.created_at AS token_created_at
         FROM events
         JOIN tokens ON tokens.id = events.token_id
         ORDER BY events.id DESC
