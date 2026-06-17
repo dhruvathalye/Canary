@@ -172,9 +172,18 @@ async function refresh(){
     fetch('/api/events').then(r=>r.json()),
     fetch('/api/stats').then(r=>r.json()),
   ]);
-
+var Breaches = document.getElementById("m-breaches")
   m_decoys.textContent=stats.decoys_planted;
-  m_breaches.textContent=stats.breaches_detected;
+  if (stats.breaches_detected > 0) {
+    Breaches.textContent=stats.breaches_detected;
+   
+    Breaches.style.color = "red";
+
+  } else {
+    Breaches.textContent = "None";
+    Breaches.style.color = "green";
+  }
+  
   m_avg.textContent=stats.industry_avg_days+'d';
   const fastest=events.length?Math.min(...events.map(e=>e.dwell_seconds)):null;
   m_fastest.textContent=fastest===null?'—':fmt(fastest);
@@ -195,6 +204,8 @@ async function refresh(){
       <div class="meta">${e.triggered_at} · ${e.ip} · ${e.geo||'Unknown'} · ${e.user_agent}</div>
       <div class="plan">${e.explanation||''}</div>
     </div>`).join('') : '<div class="empty">All quiet. No decoys have been touched.</div>';
+   
+         
 }
 
 loadCities();
