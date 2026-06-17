@@ -35,63 +35,36 @@ def now_iso():
     return datetime.now(timezone.utc).strftime(TIME_FMT)
 
 
-def action_plan(token_name, ip, geo):
+def action_plan(token_name, ip, geo, taken=""):
     """Plain-English guidance for a non-technical owner. Simple + reliable."""
+    what = f"downloaded '{taken}' from" if taken else "accessed"
     return (
-        f"A decoy ('{token_name}') was accessed from {ip} ({geo}). "
-        f"Real staff never touch decoys, so this likely means an intruder is inside.\n"
+        f"An intruder {what} your decoy '{token_name}' from {ip} ({geo}). "
+        f"Real staff never touch decoys, so this almost certainly means someone "
+        f"unauthorized is inside your systems.\n"
         f"1. Reset all admin and email passwords now.\n"
         f"2. Disconnect the affected computer from the internet.\n"
         f"3. Contact your IT support and preserve the logs."
     )
 
 
-def make_decoy_file(name, company="", location=""):
-    """Return (bytes, mimetype) for a believable, company-specific decoy.
-
-    The file looks like genuine confidential data for THAT company in THAT city
-    (local-area-code phone numbers, company-domain emails), so the attacker
-    suspects nothing. All data is fabricated.
-
-    - .xlsx -> a REAL Excel file (opens cleanly) if openpyxl is installed
-    - everything else (or no openpyxl) -> plain CSV/text that opens cleanly too
-    """
-    rows = decoy_data.employee_rows(company, location)
-    lower = (name or "").lower()
-
-    if lower.endswith(".xlsx"):
-        try:
-            import io
-            from openpyxl import Workbook
-
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "Payroll 2025"
-            for row in rows:
-                ws.append(row)
-            buf = io.BytesIO()
-            wb.save(buf)
-            return (
-                buf.getvalue(),
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
-        except Exception:
-            pass  # openpyxl missing -> fall through to plain text below
-
-    # Plain CSV/text fallback (opens fine in Excel/Notepad as .csv or .txt)
-    lines = [",".join(str(c) for c in row) for row in rows]
-    return ("\r\n".join(lines).encode("utf-8"), "text/csv")
-
-
 def lookup_geo(ip):
-    """Free, no-key IP geolocation. Best-effort -- returns 'Unknown' on failure."""
+    """Free, no-key IP geolocation. Returns a human string that also flags
+    VPN / proxy / datacenter IPs (because attackers often hide behind them)."""
     if not ip or ip.startswith(("127.", "192.168.", "10.")):
         return "Local network"
     try:
-        r = requests.get(f"http://ip-api.com/json/{ip}", timeout=4)
+        r = requests.get(
+            f"http://ip-api.com/json/{ip}"
+            "?fields=status,country,city,isp,proxy,hosting",
+            timeout=4,
+        )
         d = r.json()
         if d.get("status") == "success":
-            return f"{d.get('city', '?')}, {d.get('country', '?')}"
+            loc = f"{d.get('city', '?')}, {d.get('country', '?')}"
+            isp = d.get("isp", "")
+            flag = " · ⚠ likely VPN/proxy" if (d.get("proxy") or d.get("hosting")) else ""
+            return f"{loc} · {isp}{flag}"
     except Exception:
         pass
     return "Unknown"
@@ -167,7 +140,9 @@ def api_create_token():
         email=data.get("email", ""),
     )
     # The bait URL the team plants. Anyone hitting it triggers the alarm.
-    trigger_url = request.host_url.rstrip("/") + "/t/" + token_id
+    base = request.host_url.rstrip("/")
+    path = "/portal/" if data.get("kind") == "portal" else "/t/"
+    trigger_url = base + path + token_id
     return jsonify({"id": token_id, "trigger_url": trigger_url})
 
 
@@ -206,8 +181,20 @@ def api_stats():
 
 
 # ---------------------------------------------------------------------------
-# THE TRAP: anyone who touches a decoy hits this endpoint.
+# THE TRAP: anyone who touches a decoy hits these endpoints.
 # ---------------------------------------------------------------------------
+
+def log_breach(token, taken=""):
+    """Record the breach: capture WHO/WHERE/WHEN, write the action plan, alert."""
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "")
+    ip = ip.split(",")[0].strip()
+    ua = request.headers.get("User-Agent", "unknown")
+    geo = lookup_geo(ip)
+    when = now_iso()
+    event_id = db.create_event(token["id"], when, ip, geo, ua)
+    db.set_event_explanation(event_id, action_plan(token["name"], ip, geo, taken))
+    send_discord_alert(token["name"] + (f" / {taken}" if taken else ""), ip, geo, when)
+
 
 @app.route("/t/<token_id>")
 def trigger(token_id):
@@ -215,32 +202,77 @@ def trigger(token_id):
     if not token:
         return "Not found", 404
 
-    # Get the real client IP even behind a proxy/tunnel.
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "")
-    ip = ip.split(",")[0].strip()
-    ua = request.headers.get("User-Agent", "unknown")
-    geo = lookup_geo(ip)
-    when = now_iso()
+    # An attacker may be downloading one specific file out of the portal.
+    taken = request.args.get("file", "")
+    log_breach(token, taken)
 
-    event_id = db.create_event(token_id, when, ip, geo, ua)
-    db.set_event_explanation(event_id, action_plan(token["name"], ip, geo))
-    send_discord_alert(token["name"], ip, geo, when)
+    # If a specific file was requested, hand them that real file.
+    if taken:
+        data, mimetype = decoy_data.build_download(
+            taken, token.get("company", ""), token.get("location", "")
+        )
+        return Response(data, mimetype=mimetype,
+                        headers={"Content-Disposition": f'attachment; filename="{taken}"'})
 
-    # What the attacker sees depends on the bait type -- looks innocent to them.
+    # Otherwise behave by bait type.
     if token["kind"] == "login":
         return redirect("/fake_login.html?t=" + token_id)
     if token["kind"] == "file":
-        # Serve a real file download so the attacker actually gets "something".
-        filename = token["name"] or "document.txt"
-        data, mimetype = make_decoy_file(
+        filename = token["name"] or "document.csv"
+        data, mimetype = decoy_data.build_download(
             filename, token.get("company", ""), token.get("location", "")
         )
-        return Response(
-            data,
-            mimetype=mimetype,
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-        )
+        return Response(data, mimetype=mimetype,
+                        headers={"Content-Disposition": f'attachment; filename="{filename}"'})
     return ("", 200)  # tracking link / pixel: silent
+
+
+@app.route("/portal/<token_id>")
+def portal(token_id):
+    """A fake internal company document portal. THIS is what an attacker lands
+    on -- a believable file server listing several juicy files to download.
+    Loading this page is itself logged as a breach."""
+    token = db.get_token(token_id)
+    if not token:
+        return "Not found", 404
+
+    log_breach(token, "")  # they reached the internal portal
+    company = token.get("company") or "Internal"
+    rows = "".join(
+        f"""<tr>
+              <td class="fn">📄 {m['label']}<span>{m['file']}</span></td>
+              <td>{m['modified']}</td>
+              <td>{m['size']}</td>
+              <td><a class="dl" href="/t/{token_id}?file={m['file']}">Download</a></td>
+            </tr>"""
+        for m in decoy_data.PORTAL_MANIFEST
+    )
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{company} — Document Portal</title>
+<style>
+  body{{font-family:Segoe UI,system-ui,sans-serif;background:#f3f4f6;margin:0;color:#1f2937;}}
+  .bar{{background:#1e3a8a;color:#fff;padding:16px 28px;font-size:18px;font-weight:600;}}
+  .bar small{{display:block;font-size:12px;font-weight:400;opacity:.8;margin-top:2px;}}
+  .wrap{{max-width:880px;margin:30px auto;background:#fff;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;}}
+  .head{{padding:16px 22px;border-bottom:1px solid #e5e7eb;font-weight:600;}}
+  table{{width:100%;border-collapse:collapse;}}
+  th,td{{text-align:left;padding:14px 22px;border-bottom:1px solid #f0f0f0;font-size:14px;}}
+  th{{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;}}
+  .fn span{{display:block;color:#9ca3af;font-size:12px;}}
+  .dl{{background:#1e3a8a;color:#fff;padding:7px 16px;border-radius:6px;text-decoration:none;font-size:13px;}}
+  .dl:hover{{background:#1e40af;}}
+</style></head><body>
+  <div class="bar">{company} — Internal Document Portal
+    <small>Confidential · Authorized personnel only</small></div>
+  <div class="wrap">
+    <div class="head">Shared Documents ({len(decoy_data.PORTAL_MANIFEST)})</div>
+    <table>
+      <tr><th>Name</th><th>Modified</th><th>Size</th><th></th></tr>
+      {rows}
+    </table>
+  </div>
+</body></html>"""
 
 
 if __name__ == "__main__":
