@@ -78,12 +78,7 @@
 
   @media(max-width:860px){.hero{grid-template-columns:repeat(2,1fr);}
     .grid{grid-template-columns:1fr;}}
-    #thing{
-        color:#ff3b30
-    }
-    #otherThing{
-        color:#30d158
-    }
+   
 </style>
 </head>
 <body>
@@ -93,10 +88,10 @@
   </div>
 
   <div class="hero">
-    <div class="metric"><div class="n" id="m-decoys">0</div><div class="l">Decoys Deployed</div></div>
-    <div class="metric"><div class="n" id="m-breaches">None</div><div class="l" id="thing">Breaches Detected</div></div>
-    <div class="metric"><div class="n" id="m-fastest">N/A</div><div class="l" id="otherThing">Fastest Detection</div></div>
-    <div class="metric"><div class="n" id="m-avg">204d</div><div class="l">Industry Average</div></div>
+    <div class="metric"><div class="n" id="m_decoys">0</div><div class="l">Decoys Deployed</div></div>
+    <div class="metric"><div class="n" id="m_breaches"></div><div class="l" id="thing">Breaches Detected</div></div>
+    <div class="metric"><div class="n" id="m_fastest"></div><div class="l" id="otherThing">Fastest Detection</div></div>
+    <div class="metric"><div class="n" id="m_avg">204d</div><div class="l">Industry Average</div></div>
   </div>
 
   <div class="grid">
@@ -172,7 +167,14 @@ async function refresh(){
     fetch('/api/events').then(r=>r.json()),
     fetch('/api/stats').then(r=>r.json()),
   ]);
-var Breaches = document.getElementById("m-breaches")
+  
+  
+  m_avg.textContent=stats.industry_avg_days+'d';
+  const fastest=events.length?Math.min(...events.map(e=>e.dwell_seconds)):null;
+  m_fastest.textContent=fastest===null?'—':fmt(fastest);
+
+
+    var Breaches = document.getElementById("m_breaches")
   m_decoys.textContent=stats.decoys_planted;
   if (stats.breaches_detected > 0) {
     Breaches.textContent=stats.breaches_detected;
@@ -182,12 +184,9 @@ var Breaches = document.getElementById("m-breaches")
   } else {
     Breaches.textContent = "None";
     Breaches.style.color = "green";
+    
+    m_fastest.textContent="N/A";
   }
-  
-  m_avg.textContent=stats.industry_avg_days+'d';
-  const fastest=events.length?Math.min(...events.map(e=>e.dwell_seconds)):null;
-  m_fastest.textContent=fastest===null?'—':fmt(fastest);
-
   document.getElementById('decoys').innerHTML = tokens.length ? tokens.map(t=>`
     <div class="decoy">
       <div class="row"><span class="nm">${t.name}</span><span class="pill">${t.kind}</span></div>
@@ -213,4 +212,4 @@ refresh();
 setInterval(refresh,2000);
 </script>
 </body>
-</html>
+</html >
