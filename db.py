@@ -14,7 +14,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "deception.db")
 
 
 def get_conn():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row  # lets us read rows like dicts: row["name"]
     return conn
 
@@ -115,7 +115,7 @@ def list_events():
         SELECT events.*, tokens.name AS token_name, tokens.kind AS token_kind,
                tokens.created_at AS token_created_at
         FROM events
-        JOIN tokens ON tokens.id = events.token_id
+        LEFT JOIN tokens ON tokens.id = events.token_id
         ORDER BY events.id DESC
         """
     ).fetchall()
