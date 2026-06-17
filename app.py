@@ -18,7 +18,7 @@ import uuid
 from datetime import datetime, timezone
 
 import requests
-from flask import Flask, request, jsonify, redirect, send_from_directory
+from flask import Flask, request, jsonify, redirect, send_from_directory, Response
 
 import db
 from config import DISCORD_WEBHOOK_URL
@@ -42,6 +42,25 @@ def action_plan(token_name, ip, geo):
         f"1. Reset all admin and email passwords now.\n"
         f"2. Disconnect the affected computer from the internet.\n"
         f"3. Contact your IT support and preserve the logs."
+    )
+
+
+def make_decoy_file(name):
+    """Build fake-but-believable file contents so an attacker downloads something
+    real-looking. It's harmless bait -- no actual sensitive data."""
+    return (
+        "CONFIDENTIAL - INTERNAL USE ONLY\r\n"
+        f"File: {name}\r\n"
+        "----------------------------------------\r\n"
+        "Employee,Role,Annual Salary,Email,Login\r\n"
+        "Sarah Chen,Office Manager,68000,s.chen@company.local,schen\r\n"
+        "Mike Torres,Lead Dentist,142000,m.torres@company.local,mtorres\r\n"
+        "Priya Patel,Hygienist,61000,p.patel@company.local,ppatel\r\n"
+        "James Okoro,Receptionist,44000,j.okoro@company.local,jokoro\r\n"
+        "----------------------------------------\r\n"
+        "VPN: vpn.company.local   Admin portal: /admin\r\n"
+        "NOTE: This document is a security decoy. If you are reading this in an\r\n"
+        "incident review, the file was accessed by an unauthorized party.\r\n"
     )
 
 
@@ -183,7 +202,13 @@ def trigger(token_id):
     if token["kind"] == "login":
         return redirect("/fake_login.html?t=" + token_id)
     if token["kind"] == "file":
-        return redirect("/decoy_download.html?name=" + token["name"])
+        # Serve a real file download so the attacker actually gets "something".
+        filename = token["name"] or "document.txt"
+        return Response(
+            make_decoy_file(filename),
+            mimetype="application/octet-stream",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
     return ("", 200)  # tracking link / pixel: silent
 
 
