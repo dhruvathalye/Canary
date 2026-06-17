@@ -232,7 +232,14 @@ def trigger(token_id):
                         headers={"Content-Disposition": f'attachment; filename="{filename}"'})
     return ("", 200)  # tracking link / pixel: silent
 
-
+@app.route("/login_attempt")
+def login_attempt():
+    data = request.get_json(silent=True) or {}
+    token = db.get_token(data.get("token_id"))
+    if token:
+        log_breach(token, taken="login_attempt")
+    return jsonify({"ok": True})
+    
 @app.route("/portal/<token_id>")
 def portal(token_id):
     """A fake internal company document portal. THIS is what an attacker lands
