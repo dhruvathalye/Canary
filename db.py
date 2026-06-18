@@ -30,8 +30,7 @@ def init_db():
             created_at  TEXT NOT NULL,
             note        TEXT,
             company     TEXT,
-            location    TEXT,
-            email       TEXT
+            location    TEXT
         );
 
         CREATE TABLE IF NOT EXISTS events (
@@ -46,7 +45,7 @@ def init_db():
         """
     )
     # Migration: add new columns to databases created before they existed.
-    for col in ("company", "location", "email"):
+    for col in ("company", "location"):
         try:
             conn.execute(f"ALTER TABLE tokens ADD COLUMN {col} TEXT")
         except sqlite3.OperationalError:
@@ -67,12 +66,12 @@ def reset_db():
 # ----- tokens -----
 
 def create_token(token_id, name, kind, created_at, note="",
-                 company="", location="", email=""):
+                 company="", location=""):
     conn = get_conn()
     conn.execute(
-        "INSERT INTO tokens (id, name, kind, created_at, note, company, location, email) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (token_id, name, kind, created_at, note, company, location, email),
+        "INSERT INTO tokens (id, name, kind, created_at, note, company, location) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (token_id, name, kind, created_at, note, company, location),
     )
     conn.commit()
     conn.close()

@@ -119,12 +119,11 @@ def api_create_token():
         token_id=token_id,
         name=name,
         kind=kind,
-        
+
         created_at=now_iso(),
         note=data.get("note", ""),
         company=data.get("company", ""),
         location=data.get("location", ""),
-        email=data.get("email", ""),
     )
     # The bait URL the team plants. Anyone hitting it triggers the alarm.
     base = request.host_url.rstrip("/")
