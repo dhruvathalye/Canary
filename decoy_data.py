@@ -89,12 +89,13 @@ def local_phone(location):
 # The files an attacker sees in the fake portal. Each "gen" builds its rows.
 # ---------------------------------------------------------------------------
 
+# Size is computed live from the real file (see file_size); don't hardcode it.
 PORTAL_MANIFEST = [
-    {"file": "Payroll_2025.xlsx",        "label": "Employee Payroll 2025",      "size": "48 KB",  "modified": "2025-12-02", "gen": "payroll"},
-    {"file": "Customer_Database.csv",    "label": "Customer Database (export)", "size": "1.2 MB", "modified": "2026-01-14", "gen": "customers"},
-    {"file": "System_Logins.xlsx",       "label": "System Logins & Passwords",  "size": "12 KB",  "modified": "2025-11-20", "gen": "creds"},
-    {"file": "Bank_Statements_Q4.csv",   "label": "Bank Statements Q4",         "size": "96 KB",  "modified": "2026-01-05", "gen": "bank"},
-    {"file": "Tax_Return_2024.csv",      "label": "Tax Return 2024",            "size": "210 KB", "modified": "2025-04-11", "gen": "tax"},
+    {"file": "Payroll_2025.xlsx",      "label": "Employee Payroll 2025",      "modified": "2025-12-02", "gen": "payroll"},
+    {"file": "Customer_Database.csv",  "label": "Customer Database (export)", "modified": "2026-01-14", "gen": "customers"},
+    {"file": "System_Logins.xlsx",     "label": "System Logins & Passwords",  "modified": "2025-11-20", "gen": "creds"},
+    {"file": "Bank_Statements_Q4.csv", "label": "Bank Statements Q4",         "modified": "2026-01-05", "gen": "bank"},
+    {"file": "Tax_Return_2024.csv",    "label": "Tax Return 2024",            "modified": "2025-04-11", "gen": "tax"},
 ]
 
 
@@ -115,11 +116,11 @@ def _payroll_rows(company, location):
 
 def _customer_rows(company, location):
     rows = [["Customer Name", "Email", "Phone", "Last Visit", "Balance Due"]]
-    for _ in range(10):
+    for _ in range(85):  # a believable customer export, not a 10-row stub
         first, last = random.choice(_FIRST), random.choice(_LAST)
         rows.append([
             f"{first} {last}",
-            f"{first.lower()}{last.lower()}@gmail.com",
+            f"{first.lower()}{last.lower()}{random.randint(1,99)}@gmail.com",
             local_phone(location),
             f"2026-0{random.randint(1,6)}-{random.randint(10,28)}",
             f"${random.randint(0,4000)}.00",
@@ -146,11 +147,13 @@ def _bank_rows(company, location):
     bal = 84210.55
     descs = ["Card Payment - Supplies", "Payroll Run", "Customer Deposit",
              "Utility Bill", "Insurance Premium", "Vendor Payment", "Tax Payment"]
-    for i in range(10):
+    # A full quarter of statements, in chronological order.
+    txns = sorted((f"2025-{random.randint(10,12):02d}-{random.randint(1,28):02d}"
+                   for _ in range(40)))
+    for day in txns:
         amt = round(random.uniform(-9000, 12000), 2)
         bal += amt
-        rows.append([f"2025-12-{random.randint(1,28):02d}", random.choice(descs),
-                     f"{amt:,.2f}", f"{bal:,.2f}"])
+        rows.append([day, random.choice(descs), f"{amt:,.2f}", f"{bal:,.2f}"])
     return rows
 
 
@@ -262,3 +265,21 @@ def build_download(filename, company, location):
             gen = m["gen"]; break
     rows = _GENERATORS.get(gen, _payroll_rows)(company, location)
     return _serialize(filename or "document.csv", rows)
+
+
+def human_size(nbytes):
+    """Format a byte count like a file manager: '742 B', '12.4 KB', '1.2 MB'."""
+    if nbytes < 1024:
+        return f"{nbytes} B"
+    if nbytes < 1024 * 1024:
+        return f"{nbytes / 1024:.1f} KB"
+    return f"{nbytes / (1024 * 1024):.1f} MB"
+
+
+def file_size(filename, company, location):
+    """Real on-disk size of the file the portal will hand out (for the listing)."""
+    try:
+        data, _ = build_download(filename, company, location)
+        return human_size(len(data))
+    except Exception:
+        return "--"

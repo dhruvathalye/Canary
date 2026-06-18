@@ -277,11 +277,12 @@ def portal(token_id):
 
       # they reached the internal portal
     company = token.get("company") or "Internal"
+    loc = token.get("location", "")
     rows = "".join(
         f"""<tr>
               <td class="fn">📄 {m['label']}<span>{m['file']}</span></td>
               <td>{m['modified']}</td>
-              <td>{m['size']}</td>
+              <td>{decoy_data.file_size(m['file'], company, loc)}</td>
               <td><a class="dl" href="/t/{token_id}?file={m['file']}">Download</a></td>
             </tr>"""
         for m in decoy_data.PORTAL_MANIFEST
