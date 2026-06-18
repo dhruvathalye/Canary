@@ -232,7 +232,7 @@ def trigger(token_id):
                         headers={"Content-Disposition": f'attachment; filename="{filename}"'})
     return ("", 200)  # tracking link / pixel: silent
 
-@app.route("/login_attempt")
+@app.route("/login_attempt", methods=["POST"])
 def login_attempt():
     data = request.get_json(silent=True) or {}
     token = db.get_token(data.get("token_id"))
