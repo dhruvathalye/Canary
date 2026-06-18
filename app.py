@@ -158,6 +158,12 @@ def api_cities():
     return jsonify(decoy_data.CITY_LIST)
 
 
+@app.get("/api/formats")
+def api_formats():
+    """File formats the user can pick for a decoy file."""
+    return jsonify(decoy_data.FILE_FORMATS)
+
+
 @app.get("/api/tokens")
 def api_list_tokens():
     return jsonify(db.list_tokens())

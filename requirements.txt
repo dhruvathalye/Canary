@@ -1,3 +1,5 @@
 flask
 requests
 openpyxl
+fpdf2
+python-docx

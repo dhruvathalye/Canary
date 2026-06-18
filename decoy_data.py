@@ -175,21 +175,82 @@ def employee_rows(company, location, count=6):
     return _payroll_rows(company, location)
 
 
-def _serialize(filename, rows):
-    """Turn rows into a real downloadable file based on the extension."""
-    if filename.lower().endswith(".xlsx"):
-        try:
-            from openpyxl import Workbook
-            wb = Workbook(); ws = wb.active; ws.title = "Sheet1"
-            for r in rows:
-                ws.append(r)
-            buf = io.BytesIO(); wb.save(buf)
-            return (buf.getvalue(),
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        except Exception:
-            pass  # openpyxl missing -> fall back to CSV text
+# File formats the user can choose from (extension -> friendly label).
+FILE_FORMATS = [
+    {"ext": "xlsx", "label": "Excel spreadsheet (.xlsx)"},
+    {"ext": "csv",  "label": "CSV data file (.csv)"},
+    {"ext": "pdf",  "label": "PDF document (.pdf)"},
+    {"ext": "docx", "label": "Word document (.docx)"},
+    {"ext": "txt",  "label": "Text file (.txt)"},
+]
+
+
+def _as_csv(rows):
     text = "\r\n".join(",".join(str(c) for c in r) for r in rows)
     return (text.encode("utf-8"), "text/csv")
+
+
+def _as_xlsx(rows):
+    from openpyxl import Workbook
+    wb = Workbook(); ws = wb.active; ws.title = "Sheet1"
+    for r in rows:
+        ws.append(r)
+    buf = io.BytesIO(); wb.save(buf)
+    return (buf.getvalue(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+def _as_txt(rows):
+    text = "\r\n".join("\t".join(str(c) for c in r) for r in rows)
+    return (text.encode("utf-8"), "text/plain")
+
+
+def _as_pdf(rows):
+    from fpdf import FPDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=10)
+    for i, r in enumerate(rows):
+        if i == 0:
+            pdf.set_font("Helvetica", "B", 10)
+        line = "   ".join(str(c) for c in r)
+        pdf.cell(0, 7, line[:120], new_x="LMARGIN", new_y="NEXT")
+        if i == 0:
+            pdf.set_font("Helvetica", size=10)
+    return (bytes(pdf.output()), "application/pdf")
+
+
+def _as_docx(rows):
+    from docx import Document
+    doc = Document()
+    table = doc.add_table(rows=0, cols=len(rows[0]))
+    table.style = "Light Grid Accent 1"
+    for r in rows:
+        cells = table.add_row().cells
+        for i, c in enumerate(r):
+            cells[i].text = str(c)
+    buf = io.BytesIO(); doc.save(buf)
+    return (buf.getvalue(),
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
+
+_SERIALIZERS = {
+    "xlsx": _as_xlsx, "csv": _as_csv, "pdf": _as_pdf, "docx": _as_docx, "txt": _as_txt,
+}
+
+
+def _serialize(filename, rows):
+    """Turn rows into a real downloadable file based on the extension.
+
+    Falls back to CSV text if the matching library isn't installed, so a
+    download always succeeds even on a bare machine.
+    """
+    ext = (filename.rsplit(".", 1)[-1] if "." in filename else "csv").lower()
+    fn = _SERIALIZERS.get(ext, _as_csv)
+    try:
+        return fn(rows)
+    except Exception:
+        return _as_csv(rows)
 
 
 def build_download(filename, company, location):
