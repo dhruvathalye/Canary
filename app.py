@@ -8,7 +8,7 @@ The whole idea:
   1. You create a "honeytoken" (decoy bait) on the dashboard.
   2. You plant it somewhere (a fake file, a link in an email, a fake login page).
   3. The moment anyone touches it, this server logs WHO and WHEN, shows a
-     plain-English action plan, buzzes a phone via Discord, and goes RED.
+     plain-English action plan and goes RED.
 
 That's how a small business finds out it's been breached in SECONDS
 instead of the industry-average ~200 days.
