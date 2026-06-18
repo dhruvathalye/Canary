@@ -91,25 +91,6 @@ def human_duration(seconds):
     return f"{seconds // 86400} days"
 
 
-def send_discord_alert(token_name, ip, geo, when):
-    """Buzz a phone via Discord. Silently does nothing if no webhook is set."""
-    if not DISCORD_WEBHOOK_URL:
-        return
-    try:
-        requests.post(
-            DISCORD_WEBHOOK_URL,
-            json={
-                "content": (
-                    f"🚨 **BREACH DETECTED** 🚨\n"
-                    f"Decoy **{token_name}** was just touched.\n"
-                    f"From `{ip}` ({geo}) at {when}.\n"
-                    f"A real intruder is likely inside. Act now."
-                )
-            },
-            timeout=4,
-        )
-    except Exception:
-        pass  # never let an alert failure break the trap
 
 
 # ---------------------------------------------------------------------------
