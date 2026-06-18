@@ -174,6 +174,13 @@ def api_list_events():
     return jsonify(events)
 
 
+@app.post("/api/reset")
+def api_reset():
+    """Wipe all decoys and breach events (for a fresh demo)."""
+    db.reset_db()
+    return jsonify({"ok": True})
+
+
 @app.get("/api/stats")
 def api_stats():
     """Numbers for the headline bar at the top of the dashboard."""

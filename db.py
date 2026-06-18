@@ -55,6 +55,15 @@ def init_db():
     conn.close()
 
 
+def reset_db():
+    """Wipe ALL decoys and breach events -- back to a clean slate."""
+    conn = get_conn()
+    conn.execute("DELETE FROM events")
+    conn.execute("DELETE FROM tokens")
+    conn.commit()
+    conn.close()
+
+
 # ----- tokens -----
 
 def create_token(token_id, name, kind, created_at, note="",

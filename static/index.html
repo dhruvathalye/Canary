@@ -85,6 +85,9 @@
   <div class="topbar">
     <div class="brand">CANARY<span>°</span></div>
     <div class="tag">DECEPTION NETWORK · BREACH DETECTION FOR SMALL BUSINESS</div>
+    <button onclick="resetAll()" style="background:transparent;color:var(--muted);
+      border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:11px;
+      letter-spacing:.12em;text-transform:uppercase;cursor:pointer;">Reset</button>
   </div>
 
   <div class="hero">
@@ -157,6 +160,12 @@ async function createToken(){
   document.getElementById('name').value='';
   refresh();
   prompt('Decoy deployed. Copy this trigger URL and plant it (open it to simulate an attacker):', data.trigger_url);
+}
+
+async function resetAll(){
+  if(!confirm('Wipe ALL decoys and breach alerts? This cannot be undone.')) return;
+  await fetch('/api/reset',{method:'POST'});
+  refresh();
 }
 
 function fmt(s){return s<60?s+'s':s<3600?Math.round(s/60)+'m':s<86400?Math.round(s/3600)+'h':Math.round(s/86400)+'d';}
