@@ -64,11 +64,11 @@ AREA_CODES = {
 CITY_LIST = sorted(AREA_CODES.keys())
 
 _FIRST = ["Sarah", "Mike", "Priya", "James", "Linda", "David", "Emma",
-          "Carlos", "Aisha", "Tom", "Nina", "Raj", "Grace", "Leo", "Maria"]
+          "Carlos", "Aisha", "Tom", "Nina", "Raj", "Grace", "Leo", "Maria", "Muhammad"]
 _LAST = ["Chen", "Torres", "Patel", "Okoro", "Vasquez", "Nguyen", "Smith",
-         "Kim", "Johnson", "Rossi", "Ali", "Brooks", "Diaz", "Webb", "Cole"]
+         "Kim", "Johnson", "Rossi", "Ali", "Brooks", "Diaz", "Webb", "Cole", "Shaik"]
 _ROLES = ["Office Manager", "Owner", "Lead Technician", "Receptionist",
-          "Billing Lead", "Accountant", "Operations", "Sales Lead"]
+          "Billing Lead", "Accountant", "Operations", "Sales Lead", "Senior Director, B2B SAAS Operations"]
 
 
 def company_domain(company):
