@@ -40,7 +40,8 @@ def init_db():
             ip          TEXT,
             geo         TEXT,
             user_agent  TEXT,
-            explanation TEXT               -- plain-English action plan for the owner
+            explanation TEXT,              -- plain-English action plan for the owner
+            detail      TEXT               -- what the attacker took / did
         );
         """
     )
@@ -50,6 +51,10 @@ def init_db():
             conn.execute(f"ALTER TABLE tokens ADD COLUMN {col} TEXT")
         except sqlite3.OperationalError:
             pass  # column already exists -> fine
+    try:
+        conn.execute("ALTER TABLE events ADD COLUMN detail TEXT")
+    except sqlite3.OperationalError:
+        pass  # column already exists -> fine
     conn.commit()
     conn.close()
 
@@ -93,12 +98,12 @@ def get_token(token_id):
 
 # ----- events -----
 
-def create_event(token_id, triggered_at, ip, geo, user_agent):
+def create_event(token_id, triggered_at, ip, geo, user_agent, detail=""):
     conn = get_conn()
     cur = conn.execute(
-        "INSERT INTO events (token_id, triggered_at, ip, geo, user_agent) "
-        "VALUES (?, ?, ?, ?, ?)",
-        (token_id, triggered_at, ip, geo, user_agent),
+        "INSERT INTO events (token_id, triggered_at, ip, geo, user_agent, detail) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (token_id, triggered_at, ip, geo, user_agent, detail),
     )
     event_id = cur.lastrowid
     conn.commit()

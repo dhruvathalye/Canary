@@ -85,9 +85,14 @@
   <div class="topbar">
     <div class="brand">CANARY<span>°</span></div>
     <div class="tag">DECEPTION NETWORK · BREACH DETECTION FOR SMALL BUSINESS</div>
-    <button onclick="resetAll()" style="background:transparent;color:var(--muted);
-      border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:11px;
-      letter-spacing:.12em;text-transform:uppercase;cursor:pointer;">Reset</button>
+    <div style="display:flex;gap:10px;">
+      <button onclick="window.open('/api/report','_blank')" style="background:var(--accent);
+        color:#0a0a0b;border:none;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:600;
+        letter-spacing:.12em;text-transform:uppercase;cursor:pointer;">Incident Report</button>
+      <button onclick="resetAll()" style="background:transparent;color:var(--muted);
+        border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:11px;
+        letter-spacing:.12em;text-transform:uppercase;cursor:pointer;">Reset</button>
+    </div>
   </div>
 
   <div class="hero">
@@ -216,10 +221,14 @@ async function refresh(){
       <div class="url">${location.origin}${t.kind==='portal'?'/portal/':'/t/'}${t.id}</div>
     </div>`).join('') : '<div class="empty">No decoys deployed yet.</div>';
 
+  const sevColor={CRITICAL:'#ff3b30',HIGH:'#ff9f0a',MEDIUM:'#ffd60a',LOW:'#8a8a93'};
   document.getElementById('alerts').innerHTML = events.length ? events.map(e=>`
     <div class="alert">
       <div class="hd">
-        <span class="ttl">BREACH · ${e.token_name}</span>
+        <span class="ttl">BREACH · ${e.token_name}
+          <span style="font-size:10px;font-weight:700;letter-spacing:.1em;padding:2px 7px;
+            border-radius:10px;margin-left:8px;color:#0a0a0b;background:${sevColor[e.severity]||'#8a8a93'};">${e.severity||''}</span>
+        </span>
         <span class="dwell">Detected in ${e.dwell_human}</span>
       </div>
       <div class="meta">${e.triggered_at} · ${e.ip} · ${e.geo||'Unknown'} · ${e.user_agent}</div>

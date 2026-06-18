@@ -22,6 +22,7 @@ from flask import Flask, request, jsonify, redirect, send_from_directory, Respon
 
 import db
 import decoy_data
+import incident
 
 
 app = Flask(__name__, static_folder="static", static_url_path="")
@@ -152,12 +153,37 @@ def api_list_tokens():
 @app.get("/api/events")
 def api_list_events():
     events = db.list_events()
-    # Add the dwell-time numbers each alert card shows.
+    # Add the dwell-time numbers and threat level each alert card shows.
     for e in events:
         secs = seconds_between(e.get("token_created_at", ""), e.get("triggered_at", ""))
         e["dwell_seconds"] = secs
         e["dwell_human"] = human_duration(secs)
+        sev, exposure = incident.classify(e.get("detail", ""), e.get("token_kind", ""))
+        e["severity"] = sev
+        e["exposure"] = exposure
     return jsonify(events)
+
+
+@app.get("/api/report")
+def api_report():
+    """One-click forensic incident report (PDF) of all breaches.
+
+    Falls back to a plain-text report if PDF generation ever fails, so the
+    demo never shows an error page."""
+    events = db.list_events()
+    try:
+        pdf = incident.build_report_pdf(events)
+        return Response(pdf, mimetype="application/pdf",
+                        headers={"Content-Disposition":
+                                 'inline; filename="incident_report.pdf"'})
+    except Exception as e:
+        lines = ["SECURITY INCIDENT REPORT (text fallback)", ""]
+        for ev in events:
+            sev, exp = incident.classify(ev.get("detail", ""), ev.get("token_kind", ""))
+            lines.append(f"[{sev}] {ev.get('triggered_at')} {ev.get('ip')} "
+                         f"{ev.get('detail') or ev.get('token_name')} -> {exp}")
+        lines.append(f"\n(PDF unavailable: {e})")
+        return Response("\n".join(lines), mimetype="text/plain")
 
 
 @app.post("/api/reset")
@@ -190,7 +216,14 @@ def log_breach(token, taken=""):
     ua = request.headers.get("User-Agent", "unknown")
     geo = lookup_geo(ip)
     when = now_iso()
-    event_id = db.create_event(token["id"], when, ip, geo, ua)
+    # What the attacker took / did (drives severity + the incident report).
+    detail = taken or {
+        "file": token["name"],
+        "login": "fake login page",
+        "link": "tracking link",
+        "portal": "internal portal",
+    }.get(token["kind"], token["name"])
+    event_id = db.create_event(token["id"], when, ip, geo, ua, detail)
     db.set_event_explanation(event_id, action_plan(token["name"], ip, geo, taken))
     
 
