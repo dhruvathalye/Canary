@@ -126,10 +126,6 @@
         <label>Location (sets local phone area codes)</label>
         <select id="location"><option value="">Select a city…</option></select>
       </div>
-      <div class="field">
-        <label>Owner email (for breach alerts)</label>
-        <input id="email" type="email" placeholder="owner@company.com" />
-      </div>
       <button class="btn" onclick="createToken()">Deploy Decoy</button>
 
       <h2 style="margin-top:40px;">Deployed Decoys</h2>
@@ -171,7 +167,6 @@ async function createToken(){
     kind: kind,
     company: document.getElementById('company').value,
     location: document.getElementById('location').value,
-    email: document.getElementById('email').value,
   };
   const data = await fetch('/api/tokens',{method:'POST',
     headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
