@@ -238,12 +238,12 @@ def login_attempt():
 def portal(token_id):
     """A fake internal company document portal. THIS is what an attacker lands
     on -- a believable file server listing several juicy files to download.
-    Loading this page is itself logged as a breach."""
+    Loading this page is not logged as a breach."""
     token = db.get_token(token_id)
     if not token:
         return "Not found", 404
 
-    log_breach(token, "")  # they reached the internal portal
+      # they reached the internal portal
     company = token.get("company") or "Internal"
     rows = "".join(
         f"""<tr>
