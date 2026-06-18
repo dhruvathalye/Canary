@@ -193,7 +193,7 @@ def log_breach(token, taken=""):
     when = now_iso()
     event_id = db.create_event(token["id"], when, ip, geo, ua)
     db.set_event_explanation(event_id, action_plan(token["name"], ip, geo, taken))
-    send_discord_alert(token["name"] + (f" / {taken}" if taken else ""), ip, geo, when)
+    
 
 
 @app.route("/t/<token_id>")
