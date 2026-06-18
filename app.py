@@ -276,16 +276,16 @@ def login_attempt():
 def stream():
     def generate():
         global event_version
-        last_seen = event_version
+        with event_lock:
+            last_seen = event_version
         while True:
-            if event_version != last_seen:
-                event_version = last_seen
-                yield f"data: {last_seen}/n/n"
-                time.sleep(0.5)
-        return Response(
-            generate(),
-            mimetype="text/event-stream"
-        )
+            with event_lock:
+                current = event_version
+            if current != last_seen:
+                last_seen = event_version
+                yield f"data: {current}\n\n"
+            time.sleep(0.5)
+    return Response(generate(), mimetype="text/event-stream")
 
 @app.route("/portal/<token_id>")
 def portal(token_id):
