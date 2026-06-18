@@ -14,6 +14,7 @@ import re
 # City -> local area codes (from us_city_area_codes.txt research).
 AREA_CODES = {
     "New York, NY": ["212", "646", "718", "917"],
+    "Tel Aviv, Israel": ["03"],
     "Boston, MA": ["617", "857"],
     "Philadelphia, PA": ["215", "267"],
     "Washington, DC": ["202"],
