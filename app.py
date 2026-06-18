@@ -8,12 +8,13 @@ The whole idea:
   1. You create a "honeytoken" (decoy bait) on the dashboard.
   2. You plant it somewhere (a fake file, a link in an email, a fake login page).
   3. The moment anyone touches it, this server logs WHO and WHEN, shows a
-     plain-English action plan, buzzes a phone via Discord, and goes RED.
+     plain-English action plan and goes RED.
 
 That's how a small business finds out it's been breached in SECONDS
 instead of the industry-average ~200 days.
 """
-
+import time
+from threading import Lock
 import uuid
 from datetime import datetime, timezone
 
@@ -28,6 +29,8 @@ import incident
 app = Flask(__name__, static_folder="static", static_url_path="")
 
 db.init_db()
+event_version = 0
+event_lock = Lock()
 
 TIME_FMT = "%Y-%m-%d %H:%M:%S UTC"
 
@@ -225,6 +228,9 @@ def log_breach(token, taken=""):
     }.get(token["kind"], token["name"])
     event_id = db.create_event(token["id"], when, ip, geo, ua, detail)
     db.set_event_explanation(event_id, action_plan(token["name"], ip, geo, taken))
+    global event_version
+    with event_lock:
+        event_version+=1
     
 
 
@@ -265,7 +271,22 @@ def login_attempt():
     if token:
         log_breach(token, taken="login_attempt")
     return jsonify({"ok": True})
-    
+
+@app.route("/stream")
+def stream():
+    def generate():
+        global event_version
+        with event_lock:
+            last_seen = event_version
+        while True:
+            with event_lock:
+                current = event_version
+            if current != last_seen:
+                last_seen = event_version
+                yield f"data: {current}\n\n"
+            time.sleep(0.5)
+    return Response(generate(), mimetype="text/event-stream")
+
 @app.route("/portal/<token_id>")
 def portal(token_id):
     """A fake internal company document portal. THIS is what an attacker lands

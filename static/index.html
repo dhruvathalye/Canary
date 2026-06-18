@@ -237,11 +237,14 @@ async function refresh(){
    
          
 }
-
+const stream = new EventSource('/stream');
+  stream.onmessage = () => {
+    refresh();
+  };
 loadCities();
 loadFormats();
 refresh();
-setInterval(refresh,2000);
+
 </script>
 </body>
 </html >
