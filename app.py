@@ -22,7 +22,7 @@ from flask import Flask, request, jsonify, redirect, send_from_directory, Respon
 
 import db
 import decoy_data
-from config import DISCORD_WEBHOOK_URL
+
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 
